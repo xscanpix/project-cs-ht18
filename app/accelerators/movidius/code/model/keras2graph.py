@@ -1,7 +1,4 @@
 #!/usr/bin/python3
-
-import sys, os
-
 import tensorflow as tf
 import keras.backend as K
 
@@ -46,7 +43,6 @@ def save_tf_model(outputpath):
     saver = tf.train.Saver()
     sess = K.get_session()
     saver.save(sess, outputpath)
-    file_writer = tf.summary.FileWriter('logs/', sess.graph)
 
 
 def save_model_arch(model, filepath):
@@ -110,22 +106,3 @@ def load_model_keras(filepath):
     return model
 
 
-def main():
-    if(len(sys.argv) != 6):
-        print("Usage: python3 my_keras.py path_to_model path_to_tf_model input_name output_name path_to_graph")
-        print("Example: python3 my_keras.py model/model_2380.h5 TF_Model/tf_model input_input output/Identity TF_Model/graph")
-        exit()
-
-    path_to_model = sys.argv[1]
-    path_to_tf_model = sys.argv[2]
-    input_name = sys.argv[3]
-    output_name = sys.argv[4]
-    path_to_graph = sys.argv[5]
-
-    model = load_model_keras(path_to_model)
-    newmodel = gen_new_model(model, path_to_tf_model)
-
-    os.system("mvNCCompile {0}.meta -in {1} -on {2} -o {3}".format(path_to_tf_model, input_name, output_name, path_to_graph))
-        
-if __name__ == '__main__':
-    main()

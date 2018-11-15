@@ -1,0 +1,7 @@
+{
+    "keras_model_path": "models/model.h5",
+    "tf_output_path": "output/tf_model/model",
+    "input_layer_name": "input_input",
+    "output_layer_name": "output/Identity",
+    "ncsdk_graph_path": "output/graph"
+}
