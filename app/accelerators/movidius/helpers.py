@@ -18,14 +18,12 @@ def load_settings(filepath):
             print("Cannot load settings file: {}\nExiting...".format(filepath))
             exit()
 
-    keras_model_path = json_data['keras_model_path']
-    tf_output_path = json_data['tf_output_path']
-    input_layer_name = json_data['input_layer_name']
-    output_layer_name = json_data['output_layer_name']
-    ncsdk_graph_path = json_data['ncsdk_graph_path']
+    kerasModelPath = json_data['kerasModelPath']
+    tfOutputPath = json_data['tfOutputPath']
+    ncsdkGraphPath = json_data['ncsdkGraphPath']
 
-    json_data['keras_model_path'] = basepath + keras_model_path
-    json_data['tf_output_path'] = basepath + tf_output_path
-    json_data['ncsdk_graph_path'] = basepath + ncsdk_graph_path
+    json_data['kerasModelPath'] = basepath + kerasModelPath
+    json_data['tfOutputPath'] = basepath + tfOutputPath
+    json_data['ncsdkGraphPath'] = basepath + ncsdkGraphPath
 
     return json_data

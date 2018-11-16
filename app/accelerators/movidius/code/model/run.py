@@ -12,30 +12,30 @@ def main():
 
     print("\n")
     print("[INFO] Loading settings from {}...".format(sys.argv[1]))
-    json_data = load_settings(sys.argv[1])
-    print(json_data)
+    jsonData = load_settings(sys.argv[1])
+    print(jsonData)
     
-    path_to_model = json_data['keras_model_path']
-    path_to_tf_model = json_data['tf_output_path']
-    input_name = json_data['input_layer_name']
-    output_name = json_data['output_layer_name']
-    path_to_graph = json_data['ncsdk_graph_path']
+    kerasModelPath = jsonData['kerasModelPath']
+    tfOutputPath = jsonData['tfOutputPath']
+    inputLayerName = jsonData['inputLayerName']
+    outputLayerName = jsonData['outputLayerName']
+    ncsdkGraphPath = jsonData['ncsdkGraphPath']
 
-    print("[INFO] Loading model from keras file {}".format(path_to_model))
-    model = load_model_keras(path_to_model)
+    print("[INFO] Loading model from keras file {}".format(kerasModelPath))
+    model = load_model_keras(kerasModelPath)
     print("[INFO] Loaded model: ")
     model.summary()
     print("\n")
 
     print("[INFO] Generating new model without Dropout layer...")
-    newmodel = gen_new_model(model, path_to_tf_model)
+    newModel = gen_new_model(model, tfOutputPath)
     print("[INFO] New model: ")
-    newmodel.summary()
+    newModel.summary()
     print("\n")
 
     print("Compiling with mvNNCompile... ")
-    os.system("mvNCCompile {0}.meta -in {1} -on {2} -o {3}".format(path_to_tf_model, input_name, output_name, path_to_graph))
-    print("Graph generated at {}".format(path_to_graph))
+    os.system("mvNCCompile {0}.meta -in {1} -on {2} -o {3}".format(tfOutputPath, inputLayerName, outputLayerName, ncsdkGraphPath))
+    print("Graph generated at {}".format(ncsdkGraphPath))
 
 if __name__ == '__main__':
     main()
