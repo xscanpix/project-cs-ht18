@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import sys, os
+import sys, os, shutil
 
 import tensorflow as tf
 import keras.backend as K
@@ -9,11 +9,9 @@ from keras.layers import Dense
 from keras.layers.core import Activation
 from keras import optimizers, models
 
-from helpers import get_extension, load_settings
+from code.helpers import load_settings
 
 VALID_H5   = ['.h5']
-VALID_JSON = ['.json']
-VALID_YAML = ['.yml', '.yaml']
 
 
 def gen_new_model(model, tf_model_path):
@@ -47,99 +45,28 @@ def save_tf_model(outputpath):
     saver.save(sess, outputpath)
 
 
-def save_model_arch(model, filepath):
-    """Save the model architecture to file"""
-    ext = get_extension(filepath)
-
-    if(ext in VALID_JSON):
-        string = model.to_json()
-    elif(ext in VALID_YAML):
-        string = model.to_yaml()
-    else:
-        print("Invalid file extension: {0}.".format(ext))
-        exit()
-
-    with open(filepath, "w") as outfile:
-        outfile.write(string)
-
-    return True
-
-
-def load_model_arch(filepath):
-    """Load the model architecture from file and return the model"""
-    ext = get_extension(filepath)
-
-    with open(filepath, "r") as infile:
-        string = infile.read()
-
-    if(ext in VALID_JSON):
-        model = models.model_from_json(string)
-    elif(ext in VALID_YAML):
-        model = models.model_from_yaml(string)
-    else:
-        print("Invalid file extension: {0}.".format(ext))
-        exit()
-
-    return model
-
-
-def save_model_keras(model, filepath):
-    """Save a keras model to a HDF5 file"""
-    ext = get_extension(filepath)
-    if(ext not in VALID_H5):
-        print("Invalid file extension: {0}.".format(ext))
-        exit()
-
-    model.save(filepath)
-
-    return True
-
-
 def load_model_keras(filepath):
-    """Load keras model from HDF5 file"""
-    ext = get_extension(filepath)
-
-    if(ext not in VALID_H5):
-        print("Invalid file extension: {0}.".format(ext))
-        exit()
-
     model = models.load_model(filepath)
 
     return model
 
-def main():
-    if(len(sys.argv) != 2):
-        print("Usage: python3 run settings_file")
-        print("Example: python3 run settings.json")
-        exit()
 
-    print("\n")
-    print("[INFO] Loading settings from {}...".format(sys.argv[1]))
-    jsonData = load_settings(sys.argv[1])
-    print(jsonData)
+def keras_to_tf(jsonData, force):
+    exists = os.path.exists(jsonData['tfOutputPath'] + ".meta")
 
-    kerasModelPath = jsonData['kerasModelPath']
-    tfOutputPath = jsonData['tfOutputPath']
-    inputLayerName = jsonData['inputLayerName']
-    outputLayerName = jsonData['outputLayerName']
-    ncsdkGraphPath = jsonData['ncsdkGraphPath']
+    if(exists and force):
+        shutil.rmtree(jsonData['outputDir'])
 
-    print("[INFO] Loading model from keras file {}".format(kerasModelPath))
-    model = load_model_keras(kerasModelPath)
-    print("[INFO] Loaded model: ")
-    model.summary()
-    print("\n")
+    model = load_model_keras(jsonData['kerasModelPath'])
+    newmodel = gen_new_model(model, jsonData['tfOutputPath'])
 
-    print("[INFO] Generating new model without Dropout layer...")
-    newModel = gen_new_model(model, tfOutputPath)
-    print("[INFO] New model: ")
-    newModel.summary()
-    print("\n")
-
-    print("Compiling with mvNNCompile... ")
-    os.system("mvNCCompile {0}.meta -in {1} -on {2} -o {3}".format(tfOutputPath, inputLayerName, outputLayerName, ncsdkGraphPath))
-    print("Graph generated at {}".format(ncsdkGraphPath))
+    return newmodel
 
 
-if __name__ == '__main__':
-    main()
+def compile_tf(jsonData, force):
+    exists = os.path.exists(jsonData['ncsdkGraphPath'])
+    
+    if(exists and force):
+        os.remove(ncsdkGraphPath)
+
+    os.system("mvNCCompile {0}.meta -in {1} -on {2} -o {3}".format(jsonData['tfOutputPath'], jsonData['inputLayerName'], jsonData['outputLayerName'], jsonData['ncsdkGraphPath']))

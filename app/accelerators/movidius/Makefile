@@ -1,19 +1,38 @@
 #!/usr/bin/make -f
 
 PYTHON = python3
-RUNMOVIDIUS = code/run.py
-PREPAREMODEL = code/model/keras2graph.py
+RUNFILE = run.py
 SETTINGS = settings.json
-OUTPUTDIR = output
+OUTPUT = output
+CONVERTFLAGS = -k2tf -f
+COMPILEFLAGS = -c -f
+CPUTESTFLAGS = -tmc -it 100
+MOVIDIUSTESTFLAGS = -tmm -it 100
+SETTINGSFLAGS = -s $(SETTINGS)
 
-all: prepare run_test
 
-prepare: clean
-	mkdir $(OUTPUTDIR)
-	$(PYTHON) $(PREPAREMODEL) $(SETTINGS)	
+all: convert-compile test-cpu test-movidius
 
-run_test: 
-	$(PYTHON) $(RUNMOVIDIUS) $(SETTINGS)
+
+convert-keras: clean
+	mkdir $(OUTPUT)
+	$(PYTHON) $(RUNFILE) $(CONVERTFLAGS) $(SETTINGSFLAGS)
+
+
+compile-graph:
+	$(PYTHON) $(RUNFILE) $(COMPILEFLAGS) $(SETTINGSFLAGS)
+
+
+convert-compile: convert-keras compile-graph
+
+
+test-cpu:
+	taskset --cpu-list 1,2 $(PYTHON) $(RUNFILE) $(CPUTESTFLAGS) $(SETTINGSFLAGS)
+
+
+test-movidius:
+	$(PYTHON) $(RUNFILE) $(MOVIDIUSTESTFLAGS) $(SETTINGSFLAGS)
+
 
 clean: 
-	rm -rf $(OUTPUTDIR)
+	rm -rf $(OUTPUT)

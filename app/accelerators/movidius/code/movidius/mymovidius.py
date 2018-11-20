@@ -136,7 +136,7 @@ class MyMovidius:
     Loads a graph onto the device at deviceIndex
     '''
     def load_graph_device_index(self, deviceIndex, graphName, pathToGraph):
-        device = self.get_device(deviceIndex)
+        device = self.get_device_by_index(deviceIndex)
 
         self.load_graph(device, graphName, pathToGraph)
 
@@ -149,7 +149,7 @@ class MyMovidius:
 
 
     def run_inference_device_index(self, deviceIndex, graphName, input):
-        device = self.get_device(deviceIndex)
+        device = self.get_device_by_index(deviceIndex)
 
         return self.run_inference(device, graphName, input)
 
@@ -159,10 +159,13 @@ class MyMovidius:
     '''
     def run_inference(self, device, graphName, input):
         graphclass = device.get_graph_by_name(graphName)
-        graphclass.get_graph().queue_inference_with_fifo_elem(graphclass.get_fifoIn(), graphclass.get_fifoOut(), input, 'user object')
-        output, userObj = graphclass.get_fifoOut().read_elem()
+        results = []
+        for tensor in input:
+            graphclass.get_graph().queue_inference_with_fifo_elem(graphclass.get_fifoIn(), graphclass.get_fifoOut(), tensor, None)
+            output, userObj = graphclass.get_fifoOut().read_elem()
+            #results.append(output)
 
-        return (output, userObj)
+        return results
 
 
     '''
