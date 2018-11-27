@@ -33,4 +33,5 @@ help:
 	@echo "make benchmark_cpu to run CPU benchmark"
 	@echo "make test_gpu to run GPU tests"
 	@echo "make test_cpu to run CPU tests"
+	@echo "make compare_output to compare files after a test run"
 	@echo "make clean to clean temporaries"
