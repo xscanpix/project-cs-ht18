@@ -28,12 +28,16 @@ def compare_files(file_stream_1, file_stream_2):
 
     line_file_1 = file_stream_1.readline()
     line_file_2 = file_stream_2.readline()
-
+    compared_lines = ""
     while (line_file_1 != "" and line_file_2 != ""):
-        line_compared = compare_line(line_file_1, line_file_2)
-        print("["+ line_compared +"]")
+        compared_lines += compare_line(line_file_1, line_file_2)
+
+        print("["+ line_compared +"] \n")
+
         line_file_1 = file_stream_1.readline()
         line_file_2 = file_stream_2.readline()
+
+    return compared_lines
 
 def main():
     #print (sys.argv)
@@ -48,9 +52,9 @@ def main():
     file_stream_1 = open_file_stream(file_1)
     file_stream_2 = open_file_stream(file_2)
 
-    compare_files(file_stream_1, file_stream_2)
+    files_comped = compare_files(file_stream_1, file_stream_2)
 
-
+    print(files_comped)
 
 
 if __name__ == "__main__":
