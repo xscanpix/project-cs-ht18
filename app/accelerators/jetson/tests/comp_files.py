@@ -30,9 +30,8 @@ def compare_files(file_stream_1, file_stream_2):
     line_file_2 = file_stream_2.readline()
     compared_lines = ""
     while (line_file_1 != "" and line_file_2 != ""):
-        compared_lines += compare_line(line_file_1, line_file_2)
+        compared_lines += "["+ compare_line(line_file_1, line_file_2) +"] \n"
 
-        print("["+ line_compared +"] \n")
 
         line_file_1 = file_stream_1.readline()
         line_file_2 = file_stream_2.readline()
