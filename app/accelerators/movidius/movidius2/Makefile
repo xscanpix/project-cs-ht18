@@ -1,17 +1,19 @@
 #!/usr/bin/make -f
 
-PYTHON = python3
+PYTHON = python3 -W ignore
 RUNFILE = run.py
 SETTINGS = settings.json
-OUTPUT = output
-CONVERTFLAGS = -k2tf -f
-COMPILEFLAGS = -c -f
+OUTPUT = outputs
+CONVERTFLAGS = -k2tf
+COMPILEFLAGS = -c
 CPUTESTFLAGS = -tmc -it 100
 MOVIDIUSTESTFLAGS = -tmm -it 100
 SETTINGSFLAGS = -s $(SETTINGS)
 
+PERFFLAGS = taskset --cpu-list 0
 
-all: convert-compile test-cpu test-movidius
+
+all: convert-compile test-movidius
 
 
 convert-keras: clean
@@ -27,11 +29,11 @@ convert-compile: convert-keras compile-graph
 
 
 test-cpu:
-	taskset --cpu-list 1,2 $(PYTHON) $(RUNFILE) $(CPUTESTFLAGS) $(SETTINGSFLAGS)
+	$(PERFFLAGS) $(PYTHON) $(RUNFILE) $(CPUTESTFLAGS) $(SETTINGSFLAGS)
 
 
 test-movidius:
-	$(PYTHON) $(RUNFILE) $(MOVIDIUSTESTFLAGS) $(SETTINGSFLAGS)
+	$(PERFFLAGS) $(PYTHON) $(RUNFILE) $(MOVIDIUSTESTFLAGS) $(SETTINGSFLAGS)
 
 
 clean: 

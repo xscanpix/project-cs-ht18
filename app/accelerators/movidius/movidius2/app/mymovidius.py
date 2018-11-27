@@ -1,6 +1,19 @@
 #!/usr/bin/python3
 from mvnc import mvncapi as mvnc
 
+import numpy as np
+import time
+
+import logging
+
+logger = logging.getLogger('(MyMovidius)')
+logger.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+
 class MyGraph:
     '''
     Class for a NCSDK Graph and its FIFO queues
@@ -22,6 +35,8 @@ class MyGraph:
         self.graph = mvnc.Graph(self.graphName)
         self.fifoIn, self.fifoOut = self.graph.allocate_with_fifos(device, graphFileBuff)
 
+        logger.info("Creating and allocating graph %s. Name: %s, Path: %s" % (self.graph, self.graphName, pathToGraph))
+
 
     def get_graph(self):
         return self.graph
@@ -36,6 +51,7 @@ class MyGraph:
 
 
     def cleanup(self):
+        logger.info("Cleaning up graph %s." % (self.graph))
         self.fifoIn.destroy()
         self.fifoOut.destroy()
         self.graph.destroy()
@@ -50,12 +66,14 @@ class MyDevice:
     def __init__(self, device):
         self.device = mvnc.Device(device)
         self.graphs = []
+        logger.info("Creating device %s" % (self.device))
 
 
     '''
     Opens the device
     '''
     def open_device(self):
+        logger.info("Opening device %s" % (self.device))
         self.device.open()
 
 
@@ -64,7 +82,6 @@ class MyDevice:
     '''
     def load_graph(self, graphName, pathToGraph):
         graph = MyGraph(self.device, graphName, pathToGraph)
-
         self.graphs.append(graph)
 
         return (graph.graph, graph.fifoIn, graph.fifoOut)
@@ -83,49 +100,50 @@ class MyDevice:
     Cleanup the device
     '''
     def cleanup(self):
+        logger.info("Cleaning up device %s" % (self.device))
         for graph in self.graphs: 
             graph.cleanup()
-
+            
         self.device.destroy()
 
 
 class MyMovidius:
     '''
     Class for all Movidius devices
-    Arguments:
-        numDevicesToUse: number of devices to use
     '''
-    def __init__(self, numDevicesToUse):
+    def __init__(self):
+        self.deviceHandles = []
         self.devices = []
 
-        devices = mvnc.enumerate_devices()
-        if len(devices) == 0:
-            print('No devices found')
+        self.deviceHandles = mvnc.enumerate_devices()
+        if len(self.deviceHandles) == 0:
+            logger.error('No devices found')
             quit()
 
-        numFound = len(devices)
+        logger.info("Creating movidius object. Device handles found: %d" % (len(self.deviceHandles)))
 
-        if(len(devices) < numDevicesToUse):
-            print("Not enough devices found. Expected {}, found {}.".format(numDevices, numFound))
-            print("Using found amount")
 
+    def init_devices(self, numDevices):
+        if(len(self.deviceHandles) < numDevices):
+            logger.error("Not enough devices available.")
+            exit()
 
         # Create devices
-        for device in devices:
-            newDevice = MyDevice(device)
+        for i in range(numDevices):
+            newDevice = MyDevice(self.deviceHandles[i])
             self.devices.append(newDevice)
 
-        
         # Open devices
         for device in self.devices:
             device.open_device()
+
 
     '''
     Returns the MyDevice object at deviceIndex
     '''
     def get_device_by_index(self, deviceIndex):
         if(deviceIndex < 0 or not deviceIndex < len(self.devices)):
-            print("Device index is wrong. Exiting...")
+            logger.error("Device index is wrong. Exiting...")
             self.cleanup()
             exit()
 
@@ -159,20 +177,30 @@ class MyMovidius:
     '''
     def run_inference(self, device, graphName, input):
         graphclass = device.get_graph_by_name(graphName)
-        results = []
-        for tensor in input:
-            graphclass.get_graph().queue_inference_with_fifo_elem(graphclass.get_fifoIn(), graphclass.get_fifoOut(), tensor, None)
-            output, userObj = graphclass.get_fifoOut().read_elem()
-            #results.append(output)
 
-        return results
+        graphclass.get_graph().queue_inference_with_fifo_elem(graphclass.get_fifoIn(), graphclass.get_fifoOut(), input, None)
+        output, userObj = graphclass.get_fifoOut().read_elem()
+        return (output, userObj)
 
+
+    def get_inference_time(self, device, graphName):
+        start = time.perf_counter()
+        times = np.sum(device.get_graph_by_name(graphName).graph.get_option(mvnc.GraphOption.RO_TIME_TAKEN))
+        end = time.perf_counter()
+
+        return (times, end - start)
+
+
+    def get_inference_time_device_index(self, deviceIndex, graphName):
+        return self.get_inference_time(self.get_device_by_index(deviceIndex), graphName)
 
     '''
     Cleans up all devices
     '''
     def cleanup(self):
+        logger.info("Cleaning up movidius.")
         for device in self.devices:
             device.cleanup()
+
 
 ##############################################################3

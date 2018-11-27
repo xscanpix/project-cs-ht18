@@ -1,4 +1,0 @@
-[submodule "app/accelerators/movidius/lib/ncsdk"]
-	path = app/accelerators/movidius/lib/ncsdk
-	url = https://github.com/movidius/ncsdk.git
-	branch = ncsdk2
