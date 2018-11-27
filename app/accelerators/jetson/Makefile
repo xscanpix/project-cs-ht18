@@ -5,7 +5,7 @@
 benchmark_gpu:
 	@echo "Compiling and running GPU version for benchmarking"
 	python ./code/SampleStates.py ./lib/model_2380.h5 ./tests/sample_input.txt GPU 15
-	
+
 
 benchmark_cpu:
 	@echo "Compiling and running CPU version for benchmarking"
@@ -13,14 +13,18 @@ benchmark_cpu:
 
 test_gpu:
 	@echo "Compiling and running GPU version for testing"
-	python ./code/SampleStates.py ./lib/model_2380.h5 ./tests/sample_input.txt GPU 1 test	
+	python ./code/SampleStates.py ./lib/model_2380.h5 ./tests/sample_input.txt GPU 1 test
 
 test_cpu:
 	@echo "Compiling and running CPU version for testing"
 	python ./code/SampleStates.py ./lib/model_2380.h5 ./tests/sample_input.txt CPU 1 test
 
+compare_output:
+	@echo "checking files against eachother"
+	python ./tests/comp_files.py ./tests/output-validering.txt ./tests/results.txt
+
 clean:
-	@echo "CLEANING results file from test run"	
+	@echo "CLEANING results file from test run"
 	rm -f ./tests/results.txt
 
 
@@ -30,4 +34,3 @@ help:
 	@echo "make test_gpu to run GPU tests"
 	@echo "make test_cpu to run CPU tests"
 	@echo "make clean to clean temporaries"
-
