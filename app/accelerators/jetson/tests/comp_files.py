@@ -1,5 +1,7 @@
 import sys
 
+max_val = 0.0
+
 def print_info():
     print("info to be displayed")
 
@@ -15,12 +17,16 @@ def clean_line(line):
     return line_c
 
 def compare_line(line1, line2):
-
+    global max_val
     line1_c = clean_line(line1)
     line2_c = clean_line(line2)
     new_line = ""
     for i in range(0, 5):
-        new_line += str(float(line1_c[i]) - float(line2_c[i])) + " "
+	fval = float(line1_c[i]) - float(line2_c[i])
+	if(abs(fval) > max_val):
+		max_val = abs(fval)
+
+        new_line += str(fval) + " "
 
     return new_line
 
@@ -31,7 +37,6 @@ def compare_files(file_stream_1, file_stream_2):
     compared_lines = ""
     while (line_file_1 != "" and line_file_2 != ""):
         compared_lines += "["+ compare_line(line_file_1, line_file_2) +"] \n"
-
 
         line_file_1 = file_stream_1.readline()
         line_file_2 = file_stream_2.readline()
@@ -54,6 +59,8 @@ def main():
     files_comped = compare_files(file_stream_1, file_stream_2)
 
     print(files_comped)
+    print("\n val max diff: " + str(max_val))
+	
 
 
 if __name__ == "__main__":
