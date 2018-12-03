@@ -16,8 +16,8 @@ PERFFLAGS = taskset --cpu-list 0
 all: convert-compile test-movidius
 
 
-convert-keras: clean
-	mkdir $(OUTPUT)
+convert-keras: #clean
+	#mkdir $(OUTPUT)
 	$(PYTHON) $(RUNFILE) $(CONVERTFLAGS) $(SETTINGSFLAGS)
 
 

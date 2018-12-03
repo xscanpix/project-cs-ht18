@@ -1,74 +1,71 @@
 #!/usr/bin/python3
 
-import argparse, os, time, logging
+import argparse, os, time
+from pprint import pprint
+import numpy as np
 
-from app.helpers import load_settings
-from app.keras2graph import compile_tf, keras_to_tf, gen_model
+from mymov.helpers import load_settings
+from tests.testkeras2graph import compile_tf, gen_model
 
-from tests.tests import run_tests, plot_result, save_results, CpuTest, MovidiusTest
+from tests.tests import run_tests, plot_result, CpuTest, MovidiusTest
+from tests.helpers import load_test_config
 
 def main():
-
-
     os.environ['PROJ_DIR'] = os.getcwd()
-    print(os.environ['PROJ_DIR'])
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-k2tf", "--kerastotf", action="store_true", help="Convert first to tf")
-    parser.add_argument("-c", "--compile", action="store_true", help="Compile to a Movidius graph?")
-    parser.add_argument("-tmc", "--testmodecpu", action="store_true", help="Run tests on CPU")
-    parser.add_argument("-tmm", "--testmodemovidius", action="store_true", help="Run tests on Movidius")
-    parser.add_argument("-tf", "--testfile", help="Sample file to test")
-    parser.add_argument("-s", "--settings", help="Path to settings file")
-    parser.add_argument("-f", "--force", action="store_true", help="Force overwrite files")
-    parser.add_argument("-it", "--iterations", type=int, help="Iterations")
+    parser.add_argument("-m", "--mode", choices=['cpu', 'movidius'], help="Which mode to run.", required=True)
+    parser.add_argument("-ms", "--modelsource", choices=['tensorfile', 'generate'], help="Run with supplied tensorflow model file or generate from method according to testfile.", required=True)
+    parser.add_argument("-tf", "--testfile", help="Supply test config or tensorflow model")
+    parser.add_argument("-ti", "--testindex")
+    parser.add_argument("-s", "--settings", help="Environment settings file.", required=True)
     args = parser.parse_args()
 
     try:
         jsonData = load_settings(args.settings)
-    except:
+    except Exception as error:
+        print(error)
         exit()
 
-    testtuples = [  (0, 64)]#, (1, 64), (2, 64), (3, 64), (4, 64), (5, 64), (6, 64), (7, 64), (8, 64), (9, 64),
-                    #(0, 128), (1, 128), (2, 128), (3, 128), (4, 128)]
+    testconfig = None
 
-    # Convert Keras model to Tensorflow model, save Tensorflowmodel.
-    if args.kerastotf:
-        #keras_to_tf(jsonData, args.force)
-        for tup in testtuples:
-            gen_model(jsonData['tfOutputPath'], tup[0], tup[1]).summary()
+    if args.modelsource == "generate":
+        if not args.testfile:
+            parser.print_help()
+            exit()
+
+        testconfig = load_test_config(args.testfile)
+
+        if args.testindex:
+            index = int(args.testindex) - 1
+            gen_model(jsonData['tfOutputPath'], testconfig['tests'][index])
+        else:
+            pass
 
     # Compile Tensorflow model to Movidius graph
-    if args.compile:
-        for tup in testtuples:
-            compile_tf(jsonData, args.force, tup[0], tup[1])
+    if args.mode == 'movidius':
+        assert(testconfig != None)
 
-    if args.testmodecpu or args.testmodemovidius:
-        for tup in testtuples:
-            testInfo = {
-                "throwFirst": 100,
-                "smoothing": 2,
-                "runs": 1,
-                "iterations": 1000,
-                "createGraph": True,
-                "graphNameSuffix": "_{}_{}".format(tup[0], tup[1])
-            }
-            
-            # Run inference with CPU
-            if args.testmodecpu:
-                testclass = CpuTest(jsonData, testInfo)
+        inputs = []
 
-            # Run inference with Movidius
-            elif args.testmodemovidius:
-                testclass = MovidiusTest(jsonData, testInfo)
+        for _ in range(int(testconfig['iterations'])):
+            inputs.append(np.random.uniform(0,1,28).reshape(1,28).astype(np.float32))
 
-            testclass.test_start()
-            result = run_tests(testclass)
-            testclass.test_end()
-            #save_results(testInfo, result)
-            plot_result(testInfo, result)
-
-            time.sleep(1)
+        if args.testindex:
+            index = int(args.testindex) - 1
+            compile_tf(jsonData, testconfig['tests'][index])
+            testclass = MovidiusTest(jsonData, testconfig, index, inputs)
+            #testclass.test_start()
+            print("Test:")
+            pprint(testconfig['tests'][index])
+            testclass.run_setup()
+            for i in range(int(testconfig['runs'])):
+                run_tests(testclass)
+                time.sleep(1)
+            testclass.run_cleanup()
+            #testclass.test_end()
+        else:
+            pass
 
 
 if __name__ == '__main__':

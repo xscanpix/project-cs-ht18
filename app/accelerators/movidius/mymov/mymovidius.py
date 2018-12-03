@@ -1,20 +1,21 @@
 #!/usr/bin/python3
 from mvnc import mvncapi as mvnc
 
-import numpy as np
 import time
+import numpy as np
 
 import logging
 
 logger = logging.getLogger('(MyMovidius)')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
+ch.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 class MyGraph:
+
     '''
     Class for a NCSDK Graph and its FIFO queues
     Arguments:
@@ -34,27 +35,16 @@ class MyGraph:
         self.graphName = graphName
         self.graph = mvnc.Graph(self.graphName)
         self.fifoIn, self.fifoOut = self.graph.allocate_with_fifos(device, graphFileBuff)
-
-        logger.info("Creating and allocating graph %s. Name: %s, Path: %s" % (self.graph, self.graphName, pathToGraph))
-
-
-    def get_graph(self):
-        return self.graph
-
-
-    def get_fifoIn(self):
-        return self.fifoIn
-
-
-    def get_fifoOut(self):
-        return self.fifoOut
-
+    
+    def __repr__(self):
+        return "<MyGraph>\nGraphName: {}\nGraph: {}\nFifoIn: {}\nFifoOut: {}".format(self.graphName, self.graph, self.fifoIn, self.fifoOut)
 
     def cleanup(self):
-        logger.info("Cleaning up graph %s." % (self.graph))
+        logger.debug("Cleaning up graph %s." % (self))
         self.fifoIn.destroy()
         self.fifoOut.destroy()
         self.graph.destroy()
+
 
 
 class MyDevice:
@@ -66,26 +56,32 @@ class MyDevice:
     def __init__(self, device):
         self.device = mvnc.Device(device)
         self.graphs = []
-        logger.info("Creating device %s" % (self.device))
+        logger.debug("Creating device %s" % (self.device))
 
 
     '''
     Opens the device
     '''
     def open_device(self):
-        logger.info("Opening device %s" % (self.device))
+        logger.debug("Opening device %s" % (self.device))
         self.device.open()
 
 
     '''
     Loads a graph into itself
     '''
-    def load_graph(self, graphName, pathToGraph):
+    def allocate_graph(self, graphName, pathToGraph):
         graph = MyGraph(self.device, graphName, pathToGraph)
         self.graphs.append(graph)
 
         return (graph.graph, graph.fifoIn, graph.fifoOut)
 
+
+    def deallocate_graph(self, graphName):
+        for key, graph in enumerate(self.graphs):
+            if(graph.graphName == graphName):
+                graph.cleanup()
+                del self.graphs[key]
 
     '''
     Get a graph referenced by graph name
@@ -100,10 +96,11 @@ class MyDevice:
     Cleanup the device
     '''
     def cleanup(self):
-        logger.info("Cleaning up device %s" % (self.device))
+        logger.debug("Cleaning up device %s" % (self.device))
         for graph in self.graphs: 
             graph.cleanup()
             
+        self.device.close()
         self.device.destroy()
 
 
@@ -112,6 +109,8 @@ class MyMovidius:
     Class for all Movidius devices
     '''
     def __init__(self):
+        #mvnc.global_set_option(mvnc.GlobalOption.RW_LOG_LEVEL, mvnc.LogLevel.INFO)
+
         self.deviceHandles = []
         self.devices = []
 
@@ -120,7 +119,7 @@ class MyMovidius:
             logger.error('No devices found')
             quit()
 
-        logger.info("Creating movidius object. Device handles found: %d" % (len(self.deviceHandles)))
+        logger.debug("Creating movidius object. Device handles found: %d" % (len(self.deviceHandles)))
 
 
     def init_devices(self, numDevices):
@@ -159,11 +158,19 @@ class MyMovidius:
         self.load_graph(device, graphName, pathToGraph)
 
 
+    def deallocate_graph_device_index(self, deviceIndex, graphName):
+        device = self.get_device_by_index(deviceIndex)
+        self.deallocate_graph(device, graphName)
+
+
+    def deallocate_graph(self, device, graphName):
+        device.deallocate_graph(graphName)
+
     '''
     Loads a graph onto the MyDevice object
     '''
     def load_graph(self, device, graphName, pathToGraph):
-        device.load_graph(graphName, pathToGraph)
+        device.allocate_graph(graphName, pathToGraph)
 
 
     def run_inference_device_index(self, deviceIndex, graphName, input):
@@ -178,8 +185,8 @@ class MyMovidius:
     def run_inference(self, device, graphName, input):
         graphclass = device.get_graph_by_name(graphName)
 
-        graphclass.get_graph().queue_inference_with_fifo_elem(graphclass.get_fifoIn(), graphclass.get_fifoOut(), input, None)
-        output, userObj = graphclass.get_fifoOut().read_elem()
+        graphclass.graph.queue_inference_with_fifo_elem(graphclass.fifoIn, graphclass.fifoOut, input, None)
+        output, userObj = graphclass.fifoOut.read_elem()
         return (output, userObj)
 
 
@@ -188,6 +195,7 @@ class MyMovidius:
         times = np.sum(device.get_graph_by_name(graphName).graph.get_option(mvnc.GraphOption.RO_TIME_TAKEN))
         end = time.perf_counter()
 
+        # (ms, seconds)
         return (times, end - start)
 
 
@@ -198,7 +206,7 @@ class MyMovidius:
     Cleans up all devices
     '''
     def cleanup(self):
-        logger.info("Cleaning up movidius.")
+        logger.debug("Cleaning up movidius.")
         for device in self.devices:
             device.cleanup()
 

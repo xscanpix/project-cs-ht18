@@ -4,8 +4,8 @@ from abc import ABC, abstractmethod
 from pprint import pprint
 import os
 
-from app.keras2graph import load_model_keras, gen_model
-from app.mymovidius import MyMovidius
+from tests.testkeras2graph import gen_model
+from mymov.mymovidius import MyMovidius
 
 import logging
 
@@ -19,17 +19,19 @@ logger.addHandler(ch)
 
 class TestClass(ABC):
     @abstractmethod
-    def __init__(self, jsonData, testInfo):
+    def __init__(self, jsonData, testconfig, test, inputs):
         self.jsonData = jsonData
-        self.testInfo = testInfo
+        self.testconfig = testconfig
+        self.test = testconfig['tests'][test]
+        self.inputs = inputs
 
     @abstractmethod
     def test_start(self):
         logging.info("-- Printing Test Configuration --")
         logging.info("JsonData:")
         pprint(self.jsonData)
-        logging.info("TestInfo:")
-        pprint(self.testInfo)
+        logging.info("Testconfig:")
+        pprint(self.testconfig)
         pass
 
     @abstractmethod
@@ -50,8 +52,8 @@ class TestClass(ABC):
 
 
 class CpuTest(TestClass):
-    def __init__(self, jsonData, testInfo):
-        super().__init__(jsonData, testInfo)
+    def __init__(self, jsonData, testconfig, test, inputs):
+        super().__init__(jsonData, testconfig, test, inputs)
         pass
 
     def test_start(self):
@@ -78,10 +80,11 @@ class CpuTest(TestClass):
         logger.info("-- End CpuTest --")
         pass
 
+from mvnc import mvncapi as mvnc
 
 class MovidiusTest(TestClass):
-    def __init__(self, jsonData, testInfo):
-        super().__init__(jsonData, testInfo)
+    def __init__(self, jsonData, testconfig, test, inputs):
+        super().__init__(jsonData, testconfig, test, inputs)
         pass
 
     def test_start(self):
@@ -93,13 +96,14 @@ class MovidiusTest(TestClass):
         super().run_setup()
         self.myMovidius = MyMovidius()
         self.myMovidius.init_devices(self.jsonData['numDevices'])
-        self.myMovidius.load_graph_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName'], self.jsonData['ncsdkGraphPath']+self.testInfo['graphNameSuffix'])
+        self.myMovidius.load_graph_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']), self.jsonData['ncsdkGraphPath']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']))
         pass
 
     def run_inference(self, input):
         super().run_inference(input)
-        (output, user_obj) = self.myMovidius.run_inference_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName'], input)
-        (times, sub) = self.myMovidius.get_inference_time(self.myMovidius.get_device_by_index(self.jsonData['defaultDeviceIndex']), self.jsonData['graphName'])
+        (output, user_obj) = self.myMovidius.run_inference_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']), input)
+        (times, sub) = self.myMovidius.get_inference_time(self.myMovidius.get_device_by_index(self.jsonData['defaultDeviceIndex']), self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']))
+        # (ms, seconds)
         return (times, sub)
 
     def run_cleanup(self):
@@ -112,47 +116,36 @@ class MovidiusTest(TestClass):
         logger.info("-- End MovidiusTest --")
         pass
 
-
 import time
 
 def run_tests(testclass):
     totaltimes = []
     movidiustimes = []
 
-    inputs = []
-
-    for i in range(testclass.testInfo['iterations']):
-        inputs.append(np.random.uniform(0,1,28).reshape(1,28).astype(np.float32))
-
-    setup = testclass.run_setup()
-    for i in range(testclass.testInfo['iterations']):
+    for i in range(testclass.testconfig['iterations']):
         start = time.perf_counter()
-        times = testclass.run_inference(inputs[i])
+        times = testclass.run_inference(testclass.inputs[i])
+        # time = (ms, seconds)
         end = time.perf_counter()
         
         if times != None:
             movidiustimes.append(times[0])
         totaltimes.append(((end - start) - times[1]) * 1000)
-    testclass.run_cleanup()
 
-    return [totaltimes, movidiustimes]
+    plot_result(testclass.testconfig, testclass.test, [totaltimes, movidiustimes])
 
 
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import lfilter
 
-def save_results(testInfo, times):
-    np.save(os.environ['PROJ_DIR'] + "/resources/graphs/graphdata" + testInfo['graphNameSuffix'], times)
-
-
-def plot_result(testInfo, times):
-    if(testInfo['createGraph']):
-        n = testInfo['smoothing']
+def plot_result(testconfig, test, times):
+    if(testconfig['savegraphs']):
+        n = testconfig['smoothing']
         b = [1.0 / n] * n
         a = 1
 
-        y0 = lfilter(b,a,times[0])[testInfo['throwFirst']:]
+        y0 = lfilter(b,a,times[0])[testconfig['throwfirst']:]
         x0 = np.arange(len(y0))
         avg_0 = np.average(y0)
         std_0 = np.std(y0)
@@ -167,7 +160,7 @@ def plot_result(testInfo, times):
         line_1, = ax1.plot(x0, y0, label="Total ms, avg(%.5f ms), std(%.5f ms), median(%.5f ms)" % (avg_0, std_0, mean_0), color='b')
         
         if(len(times[1]) > 0):
-            y1 = lfilter(b,a,times[1])[testInfo['throwFirst']:]
+            y1 = lfilter(b,a,times[1])[testconfig['throwfirst']:]
             x1 = np.arange(len(y1))
             avg_1 = np.average(y1)
             std_1 = np.std(y1)
@@ -188,5 +181,20 @@ def plot_result(testInfo, times):
 
 
         fig.tight_layout()
-#        plt.show()
-        plt.savefig(os.environ["PROJ_DIR"]+"/resources/graphs/graph" + testInfo['graphNameSuffix'])
+        #plt.show()
+        #plt.savefig(os.environ["PROJ_DIR"]+"/resources/graphs/graph" + test['graphNameSuffix'])
+
+        info = "_{}_{}_{}".format(test['layers'], test['neurons'], test['shaves']).split("_")[1:]
+
+        if(not os.path.exists(os.environ["PROJ_DIR"]+"/resources/testresults/testdata_shave_{}.txt".format(info[2]))):
+            writeflag = "w"
+        else:
+            writeflag = "a"
+        with open(os.environ["PROJ_DIR"]+"/resources/testresults/testdata_shave_{}.txt".format(info[2]), writeflag) as file:
+            file.write("!{}:{}:{}\n".format(info[0], info[1], info[2]))
+            file.write("% total\n")
+            file.write("{} {} {}\n".format(avg_0, std_0, mean_0))
+            file.write("% movidius\n")
+            file.write("{} {} {}\n".format(avg_1, std_1, mean_1))
+            file.write("% percent\n")
+            file.write("{} {} {}\n".format(avg_2, std_2, mean_2))
