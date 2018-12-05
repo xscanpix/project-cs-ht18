@@ -2,11 +2,22 @@
 
 ## Preparations
 
+### Step 1.
+Install python 3 (latest)
+sudo apt-get install python3
+
+
+### Step 2.
+Install python requirements.
+sudo apt-get install python3-pip
+sudo -H pip3 install -r requirements.txt
+
+
+### Step 3.
 Clone the repoository ncsdk v2 from https://github.com/movidius/ncsdk/tree/ncsdk2
 git clone -b ncsdk2 https://github.com/movidius/ncsdk.git
 
-Install ncsdk v2
-
+Install ncsdk v2 by following their installation guide
 
 ## API Usage
 
