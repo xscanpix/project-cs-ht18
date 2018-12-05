@@ -1,6 +1,16 @@
-Usage guide
+# Usage guide
 
-Step 1.
+## Preparations
+
+Clone the repoository ncsdk v2 from https://github.com/movidius/ncsdk/tree/ncsdk2
+git clone -b ncsdk2 https://github.com/movidius/ncsdk.git
+
+Install ncsdk v2
+
+
+## API Usage
+
+### Step 1.
 
 Edit the settings.json file
 - "outputDir" 
@@ -50,7 +60,7 @@ Example settings.json:
 }
 
 
-Step 2.
+### Step 2.
 
 Generate the tensorflow model files if not done already
 Make sure the layers are supported by the ncsdk v2
@@ -60,27 +70,27 @@ Construct the model and set the weights manually as seen in keras2graph.py/gen_m
 (TODO: Support keras model files)
 
 
-Step 3.
+### Step 3.
 
 Generate movidius graph
 
 either run the mvNCCompile command manually or by using the run.py file
 
 
-Step 4.
+### Step 4.
 
 Use the mymovidius.py module to setup the movidius environment and run inference
 
 Example:
 
-# Init
+Init
 mymov = MyMovidius()
 mymov.init_devices(1)
 mymov.load_graph_device_index(0, "graph", "graphs/graph")
 
-# Run inferences
+Run inferences
 input = numpy.random.uniform(0,1,28).reshape(1,28)
 (result, myobject) = mymov.run_inference_device_index(0, "graph", input)
 
-# Cleanup
+Cleanup
 mymov.cleanup()
