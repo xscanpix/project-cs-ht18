@@ -61,6 +61,7 @@ def main():
             testclass.run_setup()
             for i in range(int(testconfig['runs'])):
                 run_tests(testclass)
+                print("Subtest #{} done".format(i + 1))
                 time.sleep(1)
             testclass.run_cleanup()
             #testclass.test_end()

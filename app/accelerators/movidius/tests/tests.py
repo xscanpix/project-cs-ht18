@@ -94,22 +94,30 @@ class MovidiusTest(TestClass):
 
     def run_setup(self):
         super().run_setup()
-        self.myMovidius = MyMovidius()
-        self.myMovidius.init_devices(self.jsonData['numDevices'])
-        self.myMovidius.load_graph_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']), self.jsonData['ncsdkGraphPath']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']))
-        pass
+        try:
+            self.myMovidius = MyMovidius()
+            self.myMovidius.init_devices(self.jsonData['numDevices'])
+            self.myMovidius.load_graph_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']), self.jsonData['ncsdkGraphPath']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']))
+        except Exception as error:
+            print("Error:", error)
+            exit()
 
     def run_inference(self, input):
         super().run_inference(input)
+        
         (output, user_obj) = self.myMovidius.run_inference_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']), input)
         (times, sub) = self.myMovidius.get_inference_time(self.myMovidius.get_device_by_index(self.jsonData['defaultDeviceIndex']), self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']))
+
         # (ms, seconds)
         return (times, sub)
 
     def run_cleanup(self):
         super().run_cleanup()
-        self.myMovidius.cleanup()
-        pass
+        try:
+            self.myMovidius.cleanup()
+        except Exception as error:
+            print("Error:", error)
+            exit()
 
     def test_end(self):
         super().test_end()
@@ -125,12 +133,16 @@ def run_tests(testclass):
     for i in range(testclass.testconfig['iterations']):
         start = time.perf_counter()
         times = testclass.run_inference(testclass.inputs[i])
-        # time = (ms, seconds)
+            # time = (ms, seconds)
         end = time.perf_counter()
-        
+            #time.sleep(0.001) # Some sleeping is needed to let the USB(?) relax?
+
         if times != None:
             movidiustimes.append(times[0])
         totaltimes.append(((end - start) - times[1]) * 1000)
+
+
+    #time.sleep(0.5) # Same here with sleeping
 
     plot_result(testclass.testconfig, testclass.test, [totaltimes, movidiustimes])
 
