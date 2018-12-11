@@ -1,12 +1,11 @@
 {
     "outputDir": "outputs",
-    "kerasModelPath": "resources/model/model.h5",
-    "tfOutputPath": "outputs/tf_model/model",
+    "kerasModelPath": "resources/models/model.h5",
+    "tfOutputPath": "resources/models/NCSDKv1/model",
     "inputLayerName": "input_input",
     "outputLayerName": "output/Identity",
-    "ncsdkGraphPath": "outputs/graph",
+    "ncsdkGraphPath": "resources/models/NCSDKv1/graph",
     "graphName": "graph",
-    "shaves": 12,
     "defaultDeviceIndex": 0,
     "numDevices": 1
 }
