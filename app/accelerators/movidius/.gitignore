@@ -1,4 +1,4 @@
 *.npy
 *.pyc
-resources/graphs/*
 outputs
+tests/testresults/*

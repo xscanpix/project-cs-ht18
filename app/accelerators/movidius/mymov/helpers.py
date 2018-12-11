@@ -1,5 +1,6 @@
 #!/usr/bin/python3
-import os, json
+import os
+import json
 
 def load_settings(filepath):
 
