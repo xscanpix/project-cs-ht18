@@ -1,0 +1,2 @@
+model_checkpoint_path: "/home/project-cs-16/dev/project-cs-ht18/app/accelerators/movidius/outputs/tf_model/model"
+all_model_checkpoint_paths: "/home/project-cs-16/dev/project-cs-ht18/app/accelerators/movidius/outputs/tf_model/model"
