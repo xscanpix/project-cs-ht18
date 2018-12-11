@@ -1,6 +1,6 @@
 {
     "outputDir": "outputs",
-    "kerasModelPath": "resources/models/model.h5",
+    "kerasModelPath": "resources/models/model_5030.h5",
     "tfOutputPath": "resources/models/NCSDKv1/model",
     "inputLayerName": "input_input",
     "outputLayerName": "output/Identity",
