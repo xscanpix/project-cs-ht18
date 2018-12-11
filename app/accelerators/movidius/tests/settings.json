@@ -6,7 +6,6 @@
     "outputLayerName": "output/Identity",
     "ncsdkGraphPath": "outputs/graph",
     "graphName": "graph",
-    "shaves": 12,
     "defaultDeviceIndex": 0,
     "numDevices": 1
 }

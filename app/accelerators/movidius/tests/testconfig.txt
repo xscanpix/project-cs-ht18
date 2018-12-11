@@ -1,0 +1,6 @@
+% Test config file
+!iterations 1000
+!throwfirst 100
+!runs 5
+% hidden layers, neurons per hidden layer, shaves
+#1, 1, 1
