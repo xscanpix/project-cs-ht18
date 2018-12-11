@@ -153,7 +153,8 @@ def gen_model(tf_model_path, test):
     saver = tf.train.Saver()
     saver.save(sess, tf_model_path + "_{}_{}".format(test['layers'], test['neurons']))
 
-def compile_tf(jsonData):
-    exists = os.path.exists(jsonData['ncsdkGraphPath'])
-
-    os.system("mvNCCompile {}.meta -s {} -in {} -on {} -o {}".format(jsonData['tfOutputPath'], jsonData['shaves'], jsonData['inputLayerName'], jsonData['outputLayerName'], jsonData['ncsdkGraphPath']))
+def compile_tf(jsonData, test):
+    if(os.path.exists("{}_{}_{}_{}".format(jsonData['ncsdkGraphPath'], test['layers'], test['neurons'], test['shaves']))):
+        return
+    
+    os.system("mvNCCompile {}_{}_{}.meta -s {} -in {} -on {} -o {}_{}_{}_{}".format(jsonData['tfOutputPath'], test['layers'], test['neurons'], test['shaves'], jsonData['inputLayerName'], jsonData['outputLayerName'], jsonData['ncsdkGraphPath'], test['layers'], test['neurons'], test['shaves']))
