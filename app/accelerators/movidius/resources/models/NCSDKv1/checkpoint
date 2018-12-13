@@ -1,2 +1,2 @@
-model_checkpoint_path: "/home/project-cs-16/dev/project-cs-ht18/app/accelerators/movidius/resources/models/NCSDKv1/model"
-all_model_checkpoint_paths: "/home/project-cs-16/dev/project-cs-ht18/app/accelerators/movidius/resources/models/NCSDKv1/model"
+model_checkpoint_path: "/home/project-cs-16/dev/project-cs-ht18/app/accelerators/movidius/resources/models/NCSDKv1/model_2_256"
+all_model_checkpoint_paths: "/home/project-cs-16/dev/project-cs-ht18/app/accelerators/movidius/resources/models/NCSDKv1/model_2_256"

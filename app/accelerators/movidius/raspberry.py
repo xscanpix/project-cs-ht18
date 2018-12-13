@@ -1,11 +1,7 @@
 import numpy as np
 import os
 
-import mymov.mymovidius
-from mymov.mymovidius import MyMovidius
 from mymov.helpers import load_settings, prepare_keras_model, compile_tf, gen_model
-
-
 from mymov.Movidius import Movidius
 
 if __name__ == '__main__':
@@ -28,7 +24,7 @@ if __name__ == '__main__':
 
     ## Inference
 
-    result, user_obj = mov.run_inference_device_index(0, jsonData['graphName'], input)
+    (result, user_obj), _ = mov.run_inference_device_index(0, jsonData['graphName'], input)
 
     print("Movidius:", result)
 

@@ -1,17 +1,16 @@
 from mvnc import mvncapi as mvnc
-
+import numpy as np
 import time
 
 from mymov.Device import Device
 
 def timer(fun):
     def wrapper(*argv, **kwargs):
-        begin = time.perf_counter()
+        begin = time.time()
         rv = fun(*argv, **kwargs)
-        end = time.perf_counter()
-        return rv, end - begin
+        end = time.time()
+        return rv, (end - begin) * 1000.0
     return wrapper
-
 
 class Movidius:
     def __init__(self):
@@ -72,7 +71,6 @@ class Movidius:
         self.deallocate_graph(self.devices[index], graph_name)
 
 
-    @timer
     def run_inference_device_index(self, index, graph_name, input):
         return self.run_inference(self.devices[index], graph_name, input)
 
@@ -91,12 +89,15 @@ class Movidius:
             print("Error qeueing or reading:", error)
             exit()
 
-        return output, userObj
+        return (output, userObj)
+
+
+    def get_inference_time_device_index(self, index, graph_name):
+        return self.get_inference_time(self.devices[index], graph_name)
 
 
     @timer
     def get_inference_time(self, device, graph_name):
-        res = 0.0
         try:
             if self.mvnc_api_version == 1:
                 times = device.get_graph_by_name(graph_name).graph.GetGraphOption(mvnc.mvncGraphOption.TIME_TAKEN)
@@ -105,13 +106,8 @@ class Movidius:
         except Exception as error:
             print("Error reading time:", error)
             exit()
-        for subtime in np.nditer(times):
-            res += subtime
-        return res
 
-
-    def get_inference_time_device_index(self, index, graph_name):
-        return self.get_inference_time(self.devices[index], graph_name)
+        return np.sum(times)
 
 
     def cleanup(self):

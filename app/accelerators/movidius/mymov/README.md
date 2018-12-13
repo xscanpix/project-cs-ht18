@@ -1,3 +1,5 @@
+./usbreset $(lsusb | grep 03e7 | awk '{print "/dev/bus/usb/" $2 "/" substr($4,1,3)}')
+
 # Usage guide
 
 ## Preparations

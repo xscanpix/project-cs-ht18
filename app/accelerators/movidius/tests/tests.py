@@ -12,10 +12,17 @@ from keras.layers import Dense
 from keras.layers.core import Activation
 from keras import optimizers
 
-from mymov.mymovidius import MyMovidius
+from mymov.Movidius import Movidius
 
 from tests.helpers import save_result
 
+def timer(fun):
+    def wrapper(*argv, **kwargs):
+        begin = time.time()
+        rv = fun(*argv, **kwargs)
+        end = time.time()
+        return rv, (end - begin) * 1000.0
+    return wrapper
 
 class TestClass(ABC):
     @abstractmethod
@@ -74,35 +81,26 @@ class MovidiusTest(TestClass):
     def __init__(self, jsonData, testconfig, test, inputs):
         super().__init__(jsonData, testconfig, test, inputs)
 
+
     def test_start(self):
         super().test_start()
 
+
     def run_setup(self):
         super().run_setup()
-        self.myMovidius = MyMovidius()
-        self.myMovidius.init_devices(self.jsonData['numDevices'])
+        self.myMovidius = Movidius()
+        self.myMovidius.init_devices()
         self.myMovidius.load_graph_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']), self.jsonData['ncsdkGraphPath']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']))
 
+
+    @timer
     def run_inference(self, input):
         super().run_inference(input)
-        (output, user_obj) = self.myMovidius.run_inference_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']), input)
-        (times, sub) = self.myMovidius.get_inference_time(self.myMovidius.get_device_by_index(self.jsonData['defaultDeviceIndex']), self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']))
+        self.myMovidius.run_inference_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']), input)
+        rv = self.myMovidius.get_inference_time_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']))
 
-        try:
-            self.myMovidius = MyMovidius()
-            self.myMovidius.init_devices(self.jsonData['numDevices'])
-            self.myMovidius.load_graph_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']), self.jsonData['ncsdkGraphPath']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']))
-        except Exception as error:
-            print("Error:", error)
-            exit()
+        return rv
 
-    def run_inference(self, input):
-        super().run_inference(input)
-        
-        (output, user_obj) = self.myMovidius.run_inference_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']), input)
-        (times, sub) = self.myMovidius.get_inference_time(self.myMovidius.get_device_by_index(self.jsonData['defaultDeviceIndex']), self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']))
-
-        return (times, sub)
 
     def run_cleanup(self):
         super().run_cleanup()
@@ -121,14 +119,9 @@ def run_tests(testclass):
     movidiustimes = []
 
     for i in range(testclass.testconfig['iterations']):
-        start = time.perf_counter()
-        times = testclass.run_inference(testclass.inputs[i])
-
-        end = time.perf_counter()
-
-        if times != None:
-            movidiustimes.append(times[0])
-        totaltimes.append(((end - start) - times[1]) * 1000)
+        (mov_time, sub), total = testclass.run_inference(testclass.inputs[i])
+        movidiustimes.append(mov_time)
+        totaltimes.append(total - sub)
 
     save_result(testclass.testconfig, testclass.test, [totaltimes, movidiustimes])
 

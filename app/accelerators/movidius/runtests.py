@@ -29,11 +29,13 @@ if __name__ == '__main__':
         inputs.append(np.random.uniform(0,1,28).reshape(1,28).astype(np.float32))
 
     for index, test in enumerate(testconfig['tests']):
-        gen_model(jsonData['tfOutputPath'], test)
-        compile_tf(jsonData, test)
-        testclass = MovidiusTest(jsonData, testconfig, index, inputs)
         print("Test:")
         pprint(test)
+        gen_model(jsonData['tfOutputPath'], test)
+        compile_tf(jsonData, test)
+        # Fix some reset mechanism that works...
+        os.system("./usbreset $(lsusb | grep 03e7 | awk \'{print \"/dev/bus/usb/\" $2 \"/\" substr($4,1,3)}\')")
+        testclass = MovidiusTest(jsonData, testconfig, index, inputs)
         testclass.run_setup()
         for i in range(int(testconfig['runs'])):
             run_tests(testclass)
