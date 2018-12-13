@@ -5,6 +5,9 @@ import mymov.mymovidius
 from mymov.mymovidius import MyMovidius
 from mymov.helpers import load_settings, prepare_keras_model, compile_tf, gen_model
 
+
+from mymov.Movidius import Movidius
+
 if __name__ == '__main__':
     os.environ['PROJ_DIR'] = os.getcwd()
 
@@ -16,8 +19,8 @@ if __name__ == '__main__':
 
     input = np.random.uniform(0,1,28).reshape(1,28).astype(np.float16)
 
-    mov = MyMovidius()
-    mov.init_devices(1)
+    mov = Movidius()
+    mov.init_devices()
     model = prepare_keras_model(jsonData)
     print("Predicted TF:", model.predict(input))
     compile_tf(jsonData)
