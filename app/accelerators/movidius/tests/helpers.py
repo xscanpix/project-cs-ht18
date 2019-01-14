@@ -3,6 +3,7 @@ import numpy as np
 
 def load_test_config(filepath):
     testconfig = {
+        "inputs": None,
         "iterations": None,
         "throwfirst": None,
         "runs": None,
@@ -23,7 +24,9 @@ def load_test_config(filepath):
         if line[0] == "!":
             values = line[1:].split(" ")
             
-            if values[0] == 'iterations':
+            if values[0] == 'inputs':
+                testconfig['inputs'] = int(values[1])
+            elif values[0] == 'iterations':
                 testconfig['iterations'] = int(values[1])
             elif values[0] == 'throwfirst':
                 testconfig['throwfirst'] = int(values[1])
@@ -35,12 +38,11 @@ def load_test_config(filepath):
 
         elif line[0] == "#":
             values = line[1:].replace(" ", "").split(",")
-            test = {"layers": None, "neurons": None, "shaves": None}
+            test = {"layers": None, "neurons": None, "shaves": None, "inputs": None}
             test["layers"] = int(values[0])
             test["neurons"] = int(values[1])
-
-            if len(values) == 3:
-                test["shaves"] = int(values[2])
+            test["shaves"] = int(values[2])
+            test["inputs"] = int(values[3])
 
             testconfig['tests'].append(test)
 

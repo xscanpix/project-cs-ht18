@@ -2,3 +2,7 @@
 *.pyc
 outputs
 tests/testresults/*
+
+resources/models/NCSDKv1/graph*
+resources/models/NCSDKv1/model*
+resources/models/NCSDKv1/checkpoint

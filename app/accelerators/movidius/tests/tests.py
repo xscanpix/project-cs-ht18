@@ -90,14 +90,14 @@ class MovidiusTest(TestClass):
         super().run_setup()
         self.myMovidius = Movidius()
         self.myMovidius.init_devices()
-        self.myMovidius.load_graph_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']), self.jsonData['ncsdkGraphPath']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']))
+        self.myMovidius.load_graph_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName']+"_{}_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves'], self.test['inputs']), self.jsonData['ncsdkGraphPath']+"_{}_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves'], self.test['inputs']))
 
 
     @timer
     def run_inference(self, input):
         super().run_inference(input)
-        self.myMovidius.run_inference_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']), input)
-        rv = self.myMovidius.get_inference_time_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName']+"_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves']))
+        self.myMovidius.run_inference_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName']+"_{}_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves'], self.test['inputs']), input)
+        rv = self.myMovidius.get_inference_time_device_index(self.jsonData['defaultDeviceIndex'], self.jsonData['graphName']+"_{}_{}_{}_{}".format(self.test['layers'], self.test['neurons'], self.test['shaves'], self.test['inputs']))
 
         return rv
 
@@ -127,13 +127,13 @@ def run_tests(testclass):
 
 
 def gen_model(tf_model_path, test):
-    if(os.path.exists(tf_model_path + "_{}_{}.meta".format(test['layers'], test['neurons']))):
+    if(os.path.exists(tf_model_path + "_{}_{}_{}_{}.meta".format(test['layers'], test['neurons'], test['shaves'], test['inputs']))):
         return
 
     K.set_learning_phase(0)
     sess = K.get_session()
     newmodel = Sequential()
-    newmodel.add(Dense(test['neurons'], input_shape=(28, ), activation='relu', kernel_initializer='lecun_uniform', name='input'))
+    newmodel.add(Dense(test['neurons'], input_shape=(test['inputs'], ), activation='relu', kernel_initializer='lecun_uniform', name='input'))
     for i in range(test['layers']):
         newmodel.add(Dense(test['neurons'], activation='relu', kernel_initializer='lecun_uniform', name='dense_{}'.format(i+1)))
     newmodel.add(Dense(5, kernel_initializer='lecun_uniform', name='dense_{}'.format(test['layers'] + 1)))
@@ -144,10 +144,10 @@ def gen_model(tf_model_path, test):
 
     sess.run(tf.global_variables_initializer())
     saver = tf.train.Saver()
-    saver.save(sess, tf_model_path + "_{}_{}".format(test['layers'], test['neurons']))
+    saver.save(sess, tf_model_path + "_{}_{}_{}_{}".format(test['layers'], test['neurons'], test['shaves'], test['inputs']))
 
 def compile_tf(jsonData, test):
-    if(os.path.exists("{}_{}_{}_{}".format(jsonData['ncsdkGraphPath'], test['layers'], test['neurons'], test['shaves']))):
+    if(os.path.exists("{}_{}_{}_{}_{}".format(jsonData['ncsdkGraphPath'], test['layers'], test['neurons'], test['shaves'], test['inputs']))):
         return
     
-    os.system("mvNCCompile {}_{}_{}.meta -s {} -in {} -on {} -o {}_{}_{}_{}".format(jsonData['tfOutputPath'], test['layers'], test['neurons'], test['shaves'], jsonData['inputLayerName'], jsonData['outputLayerName'], jsonData['ncsdkGraphPath'], test['layers'], test['neurons'], test['shaves']))
+    os.system("mvNCCompile {}_{}_{}_{}_{}.meta -s {} -in {} -on {} -o {}_{}_{}_{}_{}".format(jsonData['tfOutputPath'], test['layers'], test['neurons'], test['shaves'], test['inputs'], test['shaves'], jsonData['inputLayerName'], jsonData['outputLayerName'], jsonData['ncsdkGraphPath'], test['layers'], test['neurons'], test['shaves'], test['inputs']))
